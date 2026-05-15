@@ -34,8 +34,9 @@ def convert():
         return f"Error: {str(e)}"
 
 def create_9up_odd_even_pdf(input_path, output_path):
-    poppler_path = r"C:\poppler\Library\bin"   # ← Apna path yahan daal do
+    poppler_path = os.environ.get('POPPLER_PATH', '/usr/bin')
     
+    # DPI 200 rakho
     images = convert_from_path(input_path, dpi=200, poppler_path=poppler_path)
     
     a4_width = 2480
@@ -70,8 +71,10 @@ def create_9up_odd_even_pdf(input_path, output_path):
             sheet.paste(resized, (c*cell_w, r*cell_h))
         new_pages.append(sheet)
     
-    new_pages[0].save(output_path, save_all=True, append_images=new_pages[1:], resolution=200)
-
+    # Resolution bhi 200 rakho
+    new_pages[0].save(output_path, save_all=True, 
+                     append_images=new_pages[1:], 
+                     resolution=200.0)
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=False)
