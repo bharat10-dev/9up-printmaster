@@ -1,0 +1,4 @@
+flask
+pillow
+pdf2image
+gunicorn

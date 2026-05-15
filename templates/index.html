@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>9UP PrintMaster</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+    
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: linear-gradient(135deg, #0f172a 0%, #1e2937 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      color: #e2e8f0;
+    }
+    .card {
+      background: #1e2937;
+      border-radius: 28px;
+      padding: 40px 35px;
+      box-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.6);
+      border: 1px solid #334155;
+      max-width: 460px;
+      width: 100%;
+      transition: all 0.4s ease;
+    }
+    .upload-area {
+      border: 3px dashed #64748b;
+      border-radius: 24px;
+      padding: 50px 20px;
+      text-align: center;
+      transition: all 0.4s ease;
+      cursor: pointer;
+      background: #0f172a;
+    }
+    .upload-area:hover {
+      border-color: #60a5fa;
+      background: #1e3a8a;
+      transform: scale(1.02);
+    }
+
+    .spinner {
+      width: 55px;
+      height: 55px;
+      border: 6px solid #334155;
+      border-top: 6px solid #60a5fa;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 20px auto;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    button {
+      transition: all 0.3s ease;
+    }
+    button:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+    }
+    button:active {
+      transform: scale(0.97);
+    }
+
+    .hidden { display: none !important; }
+    .fade-in { animation: fadeIn 0.5s ease forwards; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+  </style>
+</head>
+<body>
+  <div class="card" id="mainCard">
+    <div class="text-center mb-8 fade-in">
+      <div class="flex justify-center items-center gap-3 mb-3">
+        <div class="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-3xl flex items-center justify-center text-4xl animate-bounce">📚</div>
+        <h1 class="text-4xl font-bold bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">MicroMaster</h1>
+      </div>
+      <p class="text-slate-400">9 Pages per Sheet • Perfect Back-to-Back</p>
+    </div>
+
+    <form id="uploadForm">
+      <div id="dropZone" class="upload-area">
+        <div class="text-6xl mb-6 transition-transform hover:scale-110">📤</div>
+        <p class="text-xl font-semibold text-slate-200 mb-1">PDF Drop Karo</p>
+        <p class="text-slate-400 mb-6">ya click karke select karo</p>
+        
+        <input type="file" id="fileInput" accept=".pdf" required class="hidden">
+        <button type="button" onclick="document.getElementById('fileInput').click()" 
+                class="bg-slate-700 hover:bg-slate-600 text-white px-8 py-3.5 rounded-2xl font-semibold w-full">
+          📁 Apna Samaan Yeha Dalo
+        </button>
+      </div>
+
+      <div id="fileName" class="mt-5 text-center text-sm font-medium text-emerald-400 min-h-[28px]"></div>
+
+      <button type="button" id="convertBtn"
+              class="mt-8 w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white py-5 rounded-3xl text-xl font-bold shadow-xl">
+        ⚡ Dabane ka kam karo
+      </button>
+    </form>
+  </div>
+
+  <!-- Processing Screen -->
+  <div id="processing" class="hidden card text-center">
+    <div class="spinner"></div>
+    <p class="text-lg font-medium text-slate-300 mb-3">Sabar rakh thoda...</p>
+    <p id="timer" class="text-4xl font-mono text-blue-400 font-bold">00:00</p>
+    <p id="status" class="text-slate-400 mt-4 text-sm">Thoda time lagega</p>
+  </div>
+
+  <!-- Confirmation Popup -->
+  <div id="confirmPopup" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center z-50">
+    <div class="bg-slate-800 rounded-3xl p-8 max-w-xs w-full mx-4 text-center border border-slate-600 fade-in">
+      <p class="text-xl font-semibold mb-6 text-white">Download Start Karein?</p>
+      <div class="flex gap-3">
+        <button onclick="startDownload()" 
+                class="flex-1 bg-green-600 hover:bg-green-700 py-4 rounded-2xl text-white font-bold">Daba, Download</button>
+        <button onclick="cancelDownload()" 
+                class="flex-1 bg-red-600 hover:bg-red-700 py-4 rounded-2xl text-white font-bold">Mat Daba</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let timerInterval;
+    let startTime;
+
+    const fileInput = document.getElementById('fileInput');
+    const fileNameDiv = document.getElementById('fileName');
+    const convertBtn = document.getElementById('convertBtn');
+    const processing = document.getElementById('processing');
+    const timerEl = document.getElementById('timer');
+    const statusEl = document.getElementById('status');
+    const dropZone = document.getElementById('dropZone');
+    const confirmPopup = document.getElementById('confirmPopup');
+    const mainCard = document.getElementById('mainCard');
+
+    function startTimer() {
+      startTime = Date.now();
+      timerEl.textContent = "00:00";
+      timerInterval = setInterval(() => {
+        const elapsed = Math.floor((Date.now() - startTime) / 1000);
+        const min = String(Math.floor(elapsed / 60)).padStart(2, '0');
+        const sec = String(elapsed % 60).padStart(2, '0');
+        timerEl.textContent = `${min}:${sec}`;
+      }, 1000);
+    }
+
+    function stopTimer() {
+      if (timerInterval) clearInterval(timerInterval);
+    }
+
+    // File Select & Drag Drop
+    fileInput.addEventListener('change', () => {
+      if (fileInput.files[0]) fileNameDiv.textContent = `✅ ${fileInput.files[0].name}`;
+    });
+
+    dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.style.borderColor = '#60a5fa'; });
+    dropZone.addEventListener('dragleave', () => { dropZone.style.borderColor = '#64748b'; });
+    dropZone.addEventListener('drop', e => {
+      e.preventDefault();
+      dropZone.style.borderColor = '#64748b';
+      fileInput.files = e.dataTransfer.files;
+      if (fileInput.files[0]) fileNameDiv.textContent = `✅ ${fileInput.files[0].name}`;
+    });
+
+    // Convert Button
+    convertBtn.addEventListener('click', async () => {
+      if (!fileInput.files[0]) {
+        alert("Pehle PDF file select karo!");
+        return;
+      }
+
+      mainCard.classList.add('hidden');
+      processing.classList.remove('hidden');
+      startTimer();
+      statusEl.textContent = "Converting to 9UP format...";
+
+      const formData = new FormData();
+      formData.append('file', fileInput.files[0]);
+
+      try {
+        const response = await fetch('/convert', { method: 'POST', body: formData });
+        const blob = await response.blob();
+
+        stopTimer();
+        statusEl.textContent = "✅ Ready for Download!";
+
+        window.downloadBlob = blob;
+        window.downloadFileName = "9up_print_ready.pdf";
+
+        setTimeout(() => confirmPopup.classList.remove('hidden'), 600);
+
+      } catch (err) {
+        stopTimer();
+        alert("Error aa gaya. Phir try karo.");
+        resetUI();
+      }
+    });
+
+    function startDownload() {
+      if (window.downloadBlob) {
+        const url = URL.createObjectURL(window.downloadBlob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = window.downloadFileName;
+        a.click();
+        URL.revokeObjectURL(url);
+      }
+      confirmPopup.classList.add('hidden');
+      resetUI();
+    }
+
+    function cancelDownload() {
+      confirmPopup.classList.add('hidden');
+      resetUI();
+    }
+
+    function resetUI() {
+      mainCard.classList.remove('hidden');
+      processing.classList.add('hidden');
+      fileNameDiv.textContent = '';
+      fileInput.value = '';
+    }
+  </script>
+</body>
+</html>
