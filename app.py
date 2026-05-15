@@ -37,7 +37,7 @@ def create_9up_odd_even_pdf(input_path, output_path):
     poppler_path = os.environ.get('POPPLER_PATH', '/usr/bin')
     
     # DPI 200 rakho
-    images = convert_from_path(input_path, dpi=200, poppler_path=poppler_path)
+    images = convert_from_path(input_path, dpi=150, poppler_path=poppler_path)
     
     a4_width = 2480
     a4_height = 3508
@@ -74,7 +74,7 @@ def create_9up_odd_even_pdf(input_path, output_path):
     # Resolution bhi 200 rakho
     new_pages[0].save(output_path, save_all=True, 
                      append_images=new_pages[1:], 
-                     resolution=200.0)
+                     resolution=150)
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=False)
