@@ -685,8 +685,9 @@ def create_9up_pdf(
 ):
     images = convert_from_path(
         input_path,
-        **pdf_convert_options(dpi=150)
-    )
+        **pdf_convert_options(dpi=100),
+        thread_count=2
+)
 
     if not images:
         raise Exception("PDF pages load nahi hui")
