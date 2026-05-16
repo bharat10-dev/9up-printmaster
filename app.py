@@ -19,7 +19,7 @@ OUTPUT_FOLDER = "outputs"
 ALLOWED_MODES = {"normal", "duplex"}
 ALLOWED_GRID_SIZES = {2, 3, 4}
 ALLOWED_IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp", ".bmp", ".tif", ".tiff"}
-LAYOUT_DPI = 180
+LAYOUT_DPI = 150
 GENERATED_FILE_PATTERN = re.compile(r"\d{8}_\d{4,6}")
 AUTO_CLEANUP_SECONDS = int(os.environ.get("AUTO_CLEANUP_SECONDS", 24 * 60 * 60))
 CLEANUP_INTERVAL_SECONDS = 60 * 60
@@ -81,7 +81,7 @@ def get_poppler_path():
     return None
 
 
-def pdf_convert_options(dpi=180):
+def pdf_convert_options(dpi=150):
     options = {"dpi": dpi}
     poppler_path = get_poppler_path()
     if poppler_path:
@@ -356,7 +356,7 @@ def preview_convert_pdf():
             preview_pdf,
             first_page=1,
             last_page=1,
-            **pdf_convert_options(dpi=180)
+            **pdf_convert_options(dpi=150)
         )
 
         if not preview_images:
@@ -529,7 +529,7 @@ def pdf_to_images():
         reader = PdfReader(input_path)
         selected_pages = parse_page_range(page_range, len(reader.pages))
 
-        images = convert_from_path(input_path, **pdf_convert_options(dpi=180))
+        images = convert_from_path(input_path, **pdf_convert_options(dpi=150))
         stamp = timestamp()
         zip_filename = f"{base_name}_images_{stamp}.zip"
         zip_path = output_path_for(zip_filename)
@@ -685,7 +685,7 @@ def create_9up_pdf(
 ):
     images = convert_from_path(
         input_path,
-        **pdf_convert_options(dpi=180),
+        **pdf_convert_options(dpi=100),
         thread_count=2
 )
 
