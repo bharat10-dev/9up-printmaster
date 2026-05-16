@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Cleanup{% endblock %}
+{% block content %}
+<section class="hero"><div><h2>Cleanup Files</h2><p>Delete old uploads and generated outputs.</p></div></section>
+<section class="card">
+    <div class="field"><label for="cleanupHours">Delete files older than hours</label><input class="input" type="number" id="cleanupHours" min="1" max="720" value="24"></div>
+    <button class="danger-btn" type="button" id="cleanupBtn" data-action style="margin-top:18px;">Clean Old Files</button>
+    <div class="result" id="cleanupResult"></div>
+</section>
+{% endblock %}
+{% block scripts %}
+<script>
+document.getElementById('cleanupBtn').addEventListener('click',async()=>{const formData=new FormData();formData.append('hours',document.getElementById('cleanupHours').value || '24');showProcessing('Cleaning old files...');try{const response=await fetch('/cleanup',{method:'POST',body:formData});if(!response.ok){throw new Error(await getErrorMessage(response,'Cleanup failed'));}const data=await response.json();document.getElementById('cleanupResult').textContent=`${data.removed} old files removed`;hideProcessing();}catch(err){alert(err.message || 'Cleanup failed');hideProcessing();}});
+</script>
+{% endblock %}

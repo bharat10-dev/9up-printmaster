@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block title %}9UP PrintMaster{% endblock %}</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Poppins',sans-serif}
+:root{--bg:#f3f4f6;--surface:#fff;--soft:#f9fafb;--text:#111827;--muted:#6b7280;--line:#e5e7eb;--primary:#2563eb;--accent:#9333ea;--success:#16a34a;--danger:#dc2626;--warning:#ea580c}
+body.dark{--bg:#101418;--surface:#171d24;--soft:#202833;--text:#f3f4f6;--muted:#a3aab7;--line:#2e3744}
+body{background:var(--bg);color:var(--text);min-height:100vh}
+button,input,select{font:inherit}
+.topbar{min-height:75px;background:var(--surface);display:flex;align-items:center;justify-content:space-between;gap:20px;padding:0 38px;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:1000}
+.logo{display:flex;align-items:center;gap:12px;text-decoration:none;color:var(--text)}
+.logo-box{width:48px;height:48px;border-radius:14px;background:linear-gradient(135deg,var(--primary),var(--accent));display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800}
+.logo h1{font-size:25px}.logo span{color:var(--primary)}
+.nav{display:flex;align-items:center;gap:14px;flex-wrap:wrap}.nav a{color:var(--muted);text-decoration:none;font-weight:600}.nav a:hover{color:var(--primary)}
+.theme-btn,.secondary-btn{border:1px solid var(--line);background:var(--soft);color:var(--text);border-radius:12px;padding:10px 14px;cursor:pointer;font-weight:700}
+.page{width:95%;max-width:1180px;margin:34px auto 60px}
+.hero{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;margin-bottom:24px}
+.hero h2{font-size:38px;line-height:1.15;margin-bottom:10px}.hero p{color:var(--muted);line-height:1.7;max-width:760px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:18px}
+.card,.tool-card{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:24px}
+.tool-card h3,.card h3{font-size:21px;margin-bottom:9px}.tool-card p,.card p,.hint{color:var(--muted);line-height:1.6}
+.tool-card{display:flex;flex-direction:column;gap:14px}.tool-card a{text-decoration:none}
+.icon{width:52px;height:52px;border-radius:14px;display:flex;align-items:center;justify-content:center;background:var(--primary);color:#fff;font-weight:800}
+.form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}.field{background:var(--soft);border:1px solid var(--line);border-radius:16px;padding:18px;margin-top:16px}
+.field label{display:block;color:var(--muted);font-size:14px;font-weight:700;margin-bottom:8px}
+.input,.select{width:100%;border:1px solid var(--line);background:var(--surface);color:var(--text);border-radius:12px;padding:13px 14px;outline:none}
+.input:focus,.select:focus{border-color:var(--primary)}
+.unit-row{display:grid;grid-template-columns:1fr 110px;gap:10px}
+.upload{border:3px dashed var(--primary);border-radius:18px;background:var(--soft);padding:34px 20px;text-align:center;margin-top:18px}
+.upload h3{margin-bottom:8px}.upload p{color:var(--muted);margin-bottom:18px}
+.choose{display:inline-block;background:linear-gradient(135deg,var(--primary),var(--accent));color:#fff;border-radius:13px;padding:13px 20px;font-weight:800;cursor:pointer}
+input[type=file]{display:none}.file-name,.result{margin-top:12px;color:var(--success);font-weight:800;overflow-wrap:anywhere}
+.choice-row{display:flex;flex-wrap:wrap;gap:12px}.choice{flex:1;min-width:110px;background:var(--surface);border:2px solid var(--line);border-radius:13px;padding:13px;text-align:center;cursor:pointer}.choice input{display:none}.choice.active{border-color:var(--primary);color:var(--primary);font-weight:800}
+.check-row{display:flex;gap:12px;flex-wrap:wrap}.check-row label{display:flex;gap:8px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px;color:var(--text);margin:0}
+.button-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-top:18px}
+.primary-btn,.danger-btn{display:inline-block;text-align:center;text-decoration:none;width:100%;border:none;border-radius:14px;padding:15px;color:#fff;font-weight:800;cursor:pointer;background:linear-gradient(135deg,var(--primary),var(--accent))}
+.danger-btn{background:var(--danger)}button:disabled{opacity:.65;cursor:not-allowed}
+.preview{margin-top:18px}.preview img{width:100%;max-height:560px;object-fit:contain;border:1px solid var(--line);border-radius:14px;background:#fff}
+.file-list,.recent-list{display:grid;gap:10px;margin-top:16px}.file-item,.recent-item{display:grid;grid-template-columns:1fr auto auto auto;gap:8px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px}.recent-item{grid-template-columns:1fr auto}.recent-item a{color:var(--primary);font-weight:800;text-decoration:none;overflow-wrap:anywhere}.meta{color:var(--muted);font-size:13px;white-space:nowrap}
+.mini-btn{width:34px;height:34px;border:none;border-radius:10px;background:var(--soft);color:var(--text);cursor:pointer;font-weight:800}.mini-btn.remove{background:var(--danger);color:#fff}
+.hidden{display:none!important}.overlay{position:fixed;inset:0;background:rgba(0,0,0,.66);display:flex;align-items:center;justify-content:center;z-index:3000}.processing{background:rgba(255,255,255,.9)}body.dark .processing{background:rgba(16,20,24,.9)}
+.modal{width:90%;max-width:390px;background:var(--surface);border:1px solid var(--line);border-radius:22px;padding:32px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.18)}.spinner{width:64px;height:64px;border-radius:50%;border:6px solid #dbeafe;border-top-color:var(--primary);margin:0 auto 20px;animation:spin 1s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}#timer{margin-top:10px;font-size:34px;color:var(--primary);font-weight:800}.modal-actions{display:flex;gap:10px;margin-top:20px}.modal-actions button{flex:1;border:none;border-radius:13px;padding:13px;color:#fff;font-weight:800;cursor:pointer}.yes{background:var(--success)}.no{background:var(--danger)}
+@media(max-width:850px){.topbar{padding:12px 18px;align-items:flex-start;flex-direction:column}.hero{align-items:flex-start;flex-direction:column}.hero h2{font-size:30px}.form-grid,.button-row{grid-template-columns:1fr}.recent-item{grid-template-columns:1fr}.nav{gap:10px}}
+</style>
+{% block head %}{% endblock %}
+</head>
+<body>
+<div class="topbar">
+    <a class="logo" href="/">
+        <div class="logo-box">PDF</div>
+        <h1><span>9UP</span> PrintMaster</h1>
+    </a>
+    <div class="nav">
+        <a href="/convert-page">9UP</a>
+        <a href="/merge-page">Merge</a>
+        <a href="/batch-page">Batch</a>
+        <a href="/split-page">Split</a>
+        <a href="/compress-page">Compress</a>
+        <a href="/recent-page">Recent</a>
+        <button class="theme-btn" type="button" id="themeToggle">Dark</button>
+    </div>
+</div>
+
+<main class="page">
+{% block content %}{% endblock %}
+</main>
+
+<div class="overlay processing hidden" id="processing">
+    <div class="modal">
+        <div class="spinner"></div>
+        <h2>Processing...</h2>
+        <p id="status" class="hint">Please wait</p>
+        <div id="timer">00:00</div>
+    </div>
+</div>
+
+<div class="overlay hidden" id="confirmPopup">
+    <div class="modal">
+        <h2>Download Ready</h2>
+        <p class="hint" style="margin-top:10px;">Do you want to download the file?</p>
+        <div class="modal-actions">
+            <button class="yes" type="button" onclick="startDownload()">Yes</button>
+            <button class="no" type="button" onclick="cancelDownload()">No</button>
+        </div>
+    </div>
+</div>
+
+<script>
+let timerInterval;
+let startTime;
+const processing = document.getElementById('processing');
+const statusEl = document.getElementById('status');
+const timerEl = document.getElementById('timer');
+const confirmPopup = document.getElementById('confirmPopup');
+const themeToggle = document.getElementById('themeToggle');
+
+function isPdfFile(file){return file && file.name.toLowerCase().endsWith('.pdf');}
+function isImageFile(file){return file && file.type.startsWith('image/');}
+function validateFiles(files, validator, minimum){if(files.length < minimum){return false;} for(let i=0;i<files.length;i++){if(!validator(files[i])){return false;}} return true;}
+function setBusy(isBusy){document.querySelectorAll('[data-action]').forEach((button)=>button.disabled=isBusy);}
+function startTimer(){clearInterval(timerInterval);timerEl.textContent='00:00';startTime=Date.now();timerInterval=setInterval(()=>{const elapsed=Math.floor((Date.now()-startTime)/1000);const min=String(Math.floor(elapsed/60)).padStart(2,'0');const sec=String(elapsed%60).padStart(2,'0');timerEl.textContent=`${min}:${sec}`;},1000);}
+function stopTimer(){clearInterval(timerInterval);}
+function showProcessing(message){statusEl.textContent=message;processing.classList.remove('hidden');setBusy(true);startTimer();}
+function hideProcessing(){stopTimer();processing.classList.add('hidden');statusEl.textContent='Please wait';timerEl.textContent='00:00';setBusy(false);}
+async function getErrorMessage(response, fallback){const message=await response.text();return message || fallback;}
+function getDownloadFileName(response, fallback){const disposition=response.headers.get('Content-Disposition') || '';const match=disposition.match(/filename\*?=(?:UTF-8''|")?([^";]+)/i);return match ? decodeURIComponent(match[1].replace(/"/g,'')) : fallback;}
+async function downloadFromForm(endpoint, formData, message, fallbackName){showProcessing(message);try{const response=await fetch(endpoint,{method:'POST',body:formData});if(!response.ok){throw new Error(await getErrorMessage(response,'Request failed'));}window.downloadBlob=await response.blob();window.downloadFileName=getDownloadFileName(response,fallbackName);stopTimer();statusEl.textContent='Ready for Download';setTimeout(()=>confirmPopup.classList.remove('hidden'),400);}catch(err){alert(err.message || 'Something went wrong');console.log(err);hideProcessing();}finally{setBusy(false);}}
+function startDownload(){if(window.downloadBlob){const url=URL.createObjectURL(window.downloadBlob);const a=document.createElement('a');a.href=url;a.download=window.downloadFileName;document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);}confirmPopup.classList.add('hidden');hideProcessing();}
+function cancelDownload(){confirmPopup.classList.add('hidden');hideProcessing();}
+function bindFileName(inputId, labelId, validator, multipleLabel){const input=document.getElementById(inputId);const label=document.getElementById(labelId);if(!input || !label){return;}input.addEventListener('change',()=>{if(!input.files.length){label.textContent='';return;}if(!validateFiles(input.files,validator,1)){alert(validator===isPdfFile ? 'Please select PDF files only!' : 'Please select image files only!');input.value='';label.textContent='';return;}label.textContent=input.files.length===1 ? input.files[0].name : `${input.files.length} ${multipleLabel}`;});}
+function activateChoices(name){document.querySelectorAll(`input[name="${name}"]`).forEach((input)=>{const update=()=>{document.querySelectorAll(`input[name="${name}"]`).forEach((item)=>item.closest('.choice').classList.toggle('active',item.checked));};input.addEventListener('change',update);update();});}
+function formatBytes(bytes){if(bytes<1024){return `${bytes} B`;} if(bytes<1024*1024){return `${(bytes/1024).toFixed(1)} KB`;} return `${(bytes/(1024*1024)).toFixed(1)} MB`;}
+themeToggle.addEventListener('click',()=>{document.body.classList.toggle('dark');const isDark=document.body.classList.contains('dark');themeToggle.textContent=isDark?'Light':'Dark';localStorage.setItem('theme',isDark?'dark':'light');});
+if(localStorage.getItem('theme')==='dark'){document.body.classList.add('dark');themeToggle.textContent='Light';}
+</script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

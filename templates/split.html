@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Split PDF{% endblock %}
+{% block content %}
+<section class="hero"><div><h2>Split PDF</h2><p>Extract selected pages from one PDF.</p></div></section>
+<section class="card">
+    <div class="upload"><h3>Upload PDF</h3><p>Choose one PDF file.</p><label class="choose">Choose PDF<input type="file" id="splitFile" accept=".pdf"></label><div class="file-name" id="splitFileName"></div></div>
+    <div class="field"><label for="splitRange">Pages</label><input class="input" type="text" id="splitRange" placeholder="1-5, 8, 10-12"><p class="hint">Blank means all pages.</p></div>
+    <button class="primary-btn" type="button" id="splitBtn" data-action style="margin-top:18px;">Split PDF</button>
+</section>
+{% endblock %}
+{% block scripts %}
+<script>
+bindFileName('splitFile','splitFileName',isPdfFile,'PDF files selected');
+document.getElementById('splitBtn').addEventListener('click',()=>{const file=document.getElementById('splitFile').files[0];if(!file || !isPdfFile(file)){alert('Please select PDF first!');return;}const formData=new FormData();formData.append('file',file);formData.append('page_range',document.getElementById('splitRange').value.trim());downloadFromForm('/split',formData,'Splitting PDF...','split_pdf.pdf');});
+</script>
+{% endblock %}

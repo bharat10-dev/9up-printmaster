@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Password Protect{% endblock %}
+{% block content %}
+<section class="hero"><div><h2>Password Protect PDF</h2><p>Add a password to a PDF output file.</p></div></section>
+<section class="card">
+    <div class="upload"><h3>Upload PDF</h3><p>Choose one PDF file.</p><label class="choose">Choose PDF<input type="file" id="protectFile" accept=".pdf"></label><div class="file-name" id="protectFileName"></div></div>
+    <div class="field"><label for="protectPassword">Password</label><input class="input" type="password" id="protectPassword" placeholder="Enter password"></div>
+    <button class="primary-btn" type="button" id="protectBtn" data-action style="margin-top:18px;">Protect PDF</button>
+</section>
+{% endblock %}
+{% block scripts %}
+<script>
+bindFileName('protectFile','protectFileName',isPdfFile,'PDF files selected');
+document.getElementById('protectBtn').addEventListener('click',()=>{const file=document.getElementById('protectFile').files[0];const password=document.getElementById('protectPassword').value.trim();if(!file || !isPdfFile(file)){alert('Please select PDF first!');return;}if(!password){alert('Please enter password!');return;}const formData=new FormData();formData.append('file',file);formData.append('password',password);downloadFromForm('/protect',formData,'Protecting PDF...','protected.pdf');});
+</script>
+{% endblock %}

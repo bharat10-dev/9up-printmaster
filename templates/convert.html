@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}9UP Converter{% endblock %}
+{% block content %}
+<section class="hero"><div><h2>9UP PDF Converter</h2><p>Use this page only for single-file 9UP conversion and preview.</p></div></section>
+<section class="card">
+    <div class="form-grid">
+        <div class="field"><label>Printing Mode</label><div class="choice-row"><label class="choice"><input type="radio" name="mode" value="duplex" checked><span>Duplex</span></label><label class="choice"><input type="radio" name="mode" value="normal"><span>Normal</span></label></div></div>
+        <div class="field"><label>Grid Size</label><div class="choice-row"><label class="choice"><input type="radio" name="grid_size" value="2"><span>2x2</span></label><label class="choice"><input type="radio" name="grid_size" value="3" checked><span>3x3</span></label><label class="choice"><input type="radio" name="grid_size" value="4"><span>4x4</span></label></div></div>
+        <div class="field"><label for="pageRange">Page Range</label><input class="input" type="text" id="pageRange" placeholder="1-10, 15, 20-"><p class="hint">Blank means all pages.</p></div>
+        <div class="field"><label>Marks</label><div class="check-row"><label><input type="checkbox" id="pageNumbers" checked> Page Numbers</label><label><input type="checkbox" id="borders" checked> Borders</label></div></div>
+        <div class="field"><label for="marginSize">Outer Margin</label><div class="unit-row"><input class="input" type="number" id="marginSize" min="0" step="0.1" value="0.2"><select class="select" id="marginUnit"><option value="cm">cm</option><option value="in">inch</option></select></div><p class="hint">Page ke bahar wali empty space.</p></div>
+        <div class="field"><label for="gapSize">Inner Gap</label><div class="unit-row"><input class="input" type="number" id="gapSize" min="0" step="0.1" value="0.1"><select class="select" id="gapUnit"><option value="cm">cm</option><option value="in">inch</option></select></div><p class="hint">Har small page ke around gap.</p></div>
+    </div>
+    <div class="upload"><h3>Upload PDF</h3><p>Choose one PDF file.</p><label class="choose">Choose PDF<input type="file" id="fileInput" accept=".pdf"></label><div class="file-name" id="fileName"></div></div>
+    <div class="button-row"><button class="secondary-btn" type="button" id="previewBtn" data-action>Preview</button><button class="primary-btn" type="button" id="convertBtn" data-action>Convert</button></div>
+    <div class="preview hidden" id="previewPanel"><img id="previewImage" alt="9UP preview"></div>
+</section>
+{% endblock %}
+{% block scripts %}
+<script>
+let previewUrl='';
+bindFileName('fileInput','fileName',isPdfFile,'PDF files selected');
+activateChoices('mode');activateChoices('grid_size');
+function append9upOptions(formData){formData.append('mode',document.querySelector('input[name="mode"]:checked').value);formData.append('grid_size',document.querySelector('input[name="grid_size"]:checked').value);formData.append('page_range',document.getElementById('pageRange').value.trim());formData.append('page_numbers',document.getElementById('pageNumbers').checked?'true':'false');formData.append('borders',document.getElementById('borders').checked?'true':'false');formData.append('margin_value',document.getElementById('marginSize').value || '0.2');formData.append('margin_unit',document.getElementById('marginUnit').value);formData.append('gap_value',document.getElementById('gapSize').value || '0.1');formData.append('gap_unit',document.getElementById('gapUnit').value);}
+function buildForm(){const file=document.getElementById('fileInput').files[0];if(!file || !isPdfFile(file)){alert('Please select PDF first!');return null;}const formData=new FormData();formData.append('file',file);append9upOptions(formData);return formData;}
+document.getElementById('convertBtn').addEventListener('click',()=>{const formData=buildForm();if(formData){downloadFromForm('/convert',formData,'Converting PDF...','9up_output.pdf');}});
+document.getElementById('previewBtn').addEventListener('click',async()=>{const formData=buildForm();if(!formData){return;}showProcessing('Creating preview...');try{const response=await fetch('/preview-convert',{method:'POST',body:formData});if(!response.ok){throw new Error(await getErrorMessage(response,'Preview failed'));}const blob=await response.blob();if(previewUrl){URL.revokeObjectURL(previewUrl);}previewUrl=URL.createObjectURL(blob);document.getElementById('previewImage').src=previewUrl;document.getElementById('previewPanel').classList.remove('hidden');hideProcessing();}catch(err){alert(err.message || 'Preview failed');hideProcessing();}});
+</script>
+{% endblock %}

@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Merge PDF{% endblock %}
+{% block content %}
+<section class="hero"><div><h2>Merge PDF</h2><p>Upload PDFs, arrange order, then merge.</p></div></section>
+<section class="card">
+    <div class="upload"><h3>Upload PDFs</h3><p>Choose two or more PDF files.</p><label class="choose">Choose PDFs<input type="file" id="mergeFiles" accept=".pdf" multiple></label><div class="file-name" id="mergeFileName"></div></div>
+    <div class="file-list" id="mergeFileList"></div>
+    <button class="primary-btn" type="button" id="mergeBtn" data-action style="margin-top:18px;">Merge PDFs</button>
+</section>
+{% endblock %}
+{% block scripts %}
+<script>
+let mergeFileStore=[];
+function setMergeFiles(files){if(!validateFiles(files,isPdfFile,1)){alert('Please select PDF files only!');return;}mergeFileStore=Array.from(files);renderMergeFiles();}
+document.getElementById('mergeFiles').addEventListener('change',(event)=>{if(!event.target.files.length){mergeFileStore=[];renderMergeFiles();return;}setMergeFiles(event.target.files);});
+function renderMergeFiles(){document.getElementById('mergeFileName').textContent=mergeFileStore.length ? `${mergeFileStore.length} PDF files selected` : '';const list=document.getElementById('mergeFileList');list.innerHTML='';mergeFileStore.forEach((file,index)=>{const item=document.createElement('div');item.className='file-item';const name=document.createElement('span');name.textContent=`${index+1}. ${file.name}`;const up=document.createElement('button');up.className='mini-btn';up.type='button';up.textContent='↑';up.disabled=index===0;up.onclick=()=>moveFile(index,-1);const down=document.createElement('button');down.className='mini-btn';down.type='button';down.textContent='↓';down.disabled=index===mergeFileStore.length-1;down.onclick=()=>moveFile(index,1);const remove=document.createElement('button');remove.className='mini-btn remove';remove.type='button';remove.textContent='×';remove.onclick=()=>{mergeFileStore.splice(index,1);renderMergeFiles();};item.append(name,up,down,remove);list.appendChild(item);});}
+function moveFile(index,direction){const next=index+direction;const temp=mergeFileStore[index];mergeFileStore[index]=mergeFileStore[next];mergeFileStore[next]=temp;renderMergeFiles();}
+document.getElementById('mergeBtn').addEventListener('click',()=>{if(mergeFileStore.length<2){alert('Merge ke liye kam se kam 2 PDF select karo!');return;}const formData=new FormData();mergeFileStore.forEach((file)=>formData.append('files',file));downloadFromForm('/merge',formData,'Merging PDFs...','merged_pdf.pdf');});
+</script>
+{% endblock %}
