@@ -1,5 +1,6 @@
-flask
-pillow
-pdf2image
-PyPDF2
+Flask
 gunicorn
+PyPDF2
+pdf2image
+Pillow
+Werkzeug
