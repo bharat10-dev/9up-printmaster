@@ -5,14 +5,14 @@
 <section class="card">
     <div class="form-grid">
         <div class="field"><label>Printing Mode</label><div class="choice-row"><label class="choice"><input type="radio" name="mode" value="duplex" checked><span>Duplex</span></label><label class="choice"><input type="radio" name="mode" value="normal"><span>Normal</span></label></div></div>
-        <div class="field"><label>Grid Size</label><div class="choice-row"><label class="choice"><input type="radio" name="grid_size" value="2"><span>2x2</span></label><label class="choice"><input type="radio" name="grid_size" value="3" checked><span>3x3</span></label><label class="choice"><input type="radio" name="grid_size" value="4"><span>4x4</span></label></div></div>
+        <div class="field"><label>Grid Size</label><div class="choice-row"><label class="choice"><input type="radio" name="grid_size" value="1"><span>1x1</span></label><label class="choice"><input type="radio" name="grid_size" value="2"><span>2x2</span></label><label class="choice"><input type="radio" name="grid_size" value="3" checked><span>3x3</span></label><label class="choice"><input type="radio" name="grid_size" value="4"><span>4x4</span></label></div></div>
         <div class="field"><label for="pageRange">Page Range</label><input class="input" type="text" id="pageRange" placeholder="Blank for all pages"></div>
         <div class="field"><label>Marks</label><div class="check-row"><label><input type="checkbox" id="pageNumbers" checked> Page Numbers</label><label><input type="checkbox" id="borders" checked> Borders</label></div></div>
-        <div class="field"><label for="marginSize">Outer Margin</label><div class="unit-row"><input class="input" type="number" id="marginSize" min="0" step="0.1" value="0.2"><select class="select" id="marginUnit"><option value="cm">cm</option><option value="in">inch</option></select></div><p class="hint">Page ke bahar wali empty space.</p></div>
-        <div class="field"><label for="gapSize">Inner Gap</label><div class="unit-row"><input class="input" type="number" id="gapSize" min="0" step="0.1" value="0.1"><select class="select" id="gapUnit"><option value="cm">cm</option><option value="in">inch</option></select></div><p class="hint">Har small page ke around gap.</p></div>
+        <div class="field"><label for="marginSize">Outer Margin</label><div class="unit-row"><input class="input" type="number" id="marginSize" min="0" step="0.1" value="0.2"><select class="select" id="marginUnit"><option value="cm">cm</option><option value="in">inch</option></select></div><p class="hint">Exact print margin. PDF viewer me print scale 100% rakho.</p></div>
+        <div class="field"><label for="gapSize">Inner Gap</label><div class="unit-row"><input class="input" type="number" id="gapSize" min="0" step="0.1" value="0.1"><select class="select" id="gapUnit"><option value="cm">cm</option><option value="in">inch</option></select></div><p class="hint">Exact gap around each placed page.</p></div>
     </div>
     <div class="upload"><h3>Upload PDFs</h3><p>Choose one or more PDFs.</p><label class="choose">Choose PDFs<input type="file" id="batchFiles" accept=".pdf" multiple></label><div class="file-name" id="batchFileName"></div></div>
-    <button class="primary-btn" type="button" id="batchBtn" data-action style="margin-top:18px;">Convert Batch</button>
+    <button class="primary-btn" type="button" id="batchBtn" data-action data-enter-action style="margin-top:18px;">Convert Batch</button>
 </section>
 {% endblock %}
 {% block scripts %}

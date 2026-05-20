@@ -1,14 +1,23 @@
 from datetime import datetime
+from copy import copy
+from io import BytesIO
 import os
 import re
 import time
 import zipfile
 
 from flask import Flask, jsonify, redirect, render_template, request, send_file, send_from_directory, url_for
-from PyPDF2 import PdfMerger, PdfReader, PdfWriter
+try:
+    from pypdf import PdfReader, PdfWriter, Transformation
+    from pypdf._page import PageObject
+    from PyPDF2 import PdfMerger
+except ImportError:
+    from PyPDF2 import PdfMerger, PdfReader, PdfWriter, Transformation
+    from PyPDF2._page import PageObject
+from reportlab.pdfgen import canvas
 from werkzeug.utils import secure_filename
 from pdf2image import convert_from_path
-from PIL import Image, ImageDraw
+from PIL import Image
 
 
 app = Flask(__name__)
@@ -17,9 +26,11 @@ app.config["MAX_CONTENT_LENGTH"] = 100 * 1024 * 1024
 UPLOAD_FOLDER = "uploads"
 OUTPUT_FOLDER = "outputs"
 ALLOWED_MODES = {"normal", "duplex"}
-ALLOWED_GRID_SIZES = {2, 3, 4}
+ALLOWED_GRID_SIZES = {1, 2, 3, 4}
 ALLOWED_IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp", ".bmp", ".tif", ".tiff"}
-LAYOUT_DPI = 150
+LAYOUT_DPI = 72
+A4_WIDTH = 595.275590551
+A4_HEIGHT = 841.88976378
 GENERATED_FILE_PATTERN = re.compile(r"\d{8}_\d{4,6}")
 AUTO_CLEANUP_SECONDS = int(os.environ.get("AUTO_CLEANUP_SECONDS", 24 * 60 * 60))
 CLEANUP_INTERVAL_SECONDS = 60 * 60
@@ -127,8 +138,58 @@ def measurement_to_pixels(value, unit, default_px, minimum_px, maximum_px):
     else:
         raise ValueError("Unit must be cm or inch")
 
-    pixels = int(round(pixels))
     return max(minimum_px, min(maximum_px, pixels))
+
+
+def get_page_size(page):
+    box = page.cropbox
+    return float(box.width), float(box.height)
+
+
+def fit_page_transform(page, x, y, width, height):
+    page_width, page_height = get_page_size(page)
+    if page_width <= 0 or page_height <= 0:
+        raise ValueError("Invalid source page size")
+
+    scale = min(width / page_width, height / page_height)
+    fitted_width = page_width * scale
+    fitted_height = page_height * scale
+    tx = x + ((width - fitted_width) / 2)
+    ty = y + ((height - fitted_height) / 2)
+
+    return Transformation().scale(scale).translate(tx, ty)
+
+
+def add_page_to_sheet(sheet, source_page, transform, writer):
+    page_copy = copy(source_page)
+    page_copy.add_transformation(transform)
+    sheet.merge_page(page_copy)
+
+
+def build_marks_overlay(cells, show_border, show_page_numbers):
+    buffer = BytesIO()
+    pdf = canvas.Canvas(buffer, pagesize=(A4_WIDTH, A4_HEIGHT))
+
+    if show_border:
+        pdf.setStrokeColorRGB(0, 0, 0)
+        pdf.setLineWidth(1)
+
+    if show_page_numbers:
+        pdf.setFillColorRGB(1, 0, 0)
+        pdf.setFont("Helvetica-Bold", 6)
+
+    for cell in cells:
+        x, y, width, height, page_number = cell
+
+        if show_border:
+            pdf.rect(x, y, width, height, stroke=1, fill=0)
+
+        if show_page_numbers:
+            pdf.drawString(x + 3, y + height - 7, str(page_number))
+
+    pdf.save()
+    buffer.seek(0)
+    return PdfReader(buffer).pages[0]
 
 
 def parse_page_range(page_range, total_pages):
@@ -495,9 +556,10 @@ def compress_pdf():
         writer = PdfWriter()
 
         for page in reader.pages:
-            if hasattr(page, "compress_content_streams"):
-                page.compress_content_streams()
             writer.add_page(page)
+            output_page = writer.pages[-1]
+            if hasattr(output_page, "compress_content_streams"):
+                output_page.compress_content_streams()
 
         output_filename = f"{base_name}_compressed_{timestamp()}.pdf"
         output_path = output_path_for(output_filename)
@@ -637,7 +699,7 @@ def get_9up_options():
         raise ValueError("Invalid grid size") from exc
 
     if grid_size not in ALLOWED_GRID_SIZES:
-        raise ValueError("Grid size must be 2, 3, or 4")
+        raise ValueError("Grid size must be 1, 2, 3, or 4")
 
     if request.form.get("margin_value") is None:
         margin = parse_int(request.form.get("margin"), 25, 0, 600)
@@ -683,61 +745,52 @@ def create_9up_pdf(
     margin=25,
     border=12
 ):
-    images = convert_from_path(
-        input_path,
-        **pdf_convert_options(dpi=100),
-        thread_count=2
-)
-
-    if not images:
+    reader = PdfReader(input_path)
+    if not reader.pages:
         raise Exception("PDF pages load nahi hui")
 
-    selected_indices = parse_page_range(page_range, len(images))
-    selected_pages = [(index + 1, images[index]) for index in selected_indices]
+    selected_indices = parse_page_range(page_range, len(reader.pages))
+    selected_pages = [(index + 1, reader.pages[index]) for index in selected_indices]
 
-    a4_width = 2480
-    a4_height = 3508
-
-    cell_width = (a4_width - (2 * margin)) // grid_size
-    cell_height = (a4_height - (2 * margin)) // grid_size
+    cell_width = (A4_WIDTH - (2 * margin)) / grid_size
+    cell_height = (A4_HEIGHT - (2 * margin)) / grid_size
 
     if cell_width <= border * 2 or cell_height <= border * 2:
         raise ValueError("Margin or border is too large for this grid")
 
-    output_pages = []
+    writer = PdfWriter()
 
     if mode == "normal":
         for i in range(0, len(selected_pages), grid_size * grid_size):
-            sheet = Image.new("RGB", (a4_width, a4_height), "white")
-            draw = ImageDraw.Draw(sheet)
-
+            sheet = PageObject.create_blank_page(width=A4_WIDTH, height=A4_HEIGHT)
             batch = selected_pages[i:i + (grid_size * grid_size)]
+            marks = []
 
             for idx, (page_number, page) in enumerate(batch):
                 row = idx // grid_size
                 col = idx % grid_size
 
                 x = margin + (col * cell_width)
-                y = margin + (row * cell_height)
+                y = A4_HEIGHT - margin - ((row + 1) * cell_height)
+                content_x = x + border
+                content_y = y + border
+                content_width = cell_width - (border * 2)
+                content_height = cell_height - (border * 2)
 
-                resized = page.resize(
-                    (cell_width - border * 2, cell_height - border * 2),
-                    Image.Resampling.LANCZOS
+                transform = fit_page_transform(
+                    page,
+                    content_x,
+                    content_y,
+                    content_width,
+                    content_height
                 )
+                add_page_to_sheet(sheet, page, transform, writer)
+                marks.append((x, y, cell_width, cell_height, page_number))
 
-                sheet.paste(resized, (x + border, y + border))
+            if show_border or show_page_numbers:
+                sheet.merge_page(build_marks_overlay(marks, show_border, show_page_numbers))
 
-                if show_border:
-                    draw.rectangle(
-                        [x, y, x + cell_width, y + cell_height],
-                        outline="black",
-                        width=4
-                    )
-
-                if show_page_numbers:
-                    draw.text((x + 15, y + 15), str(page_number), fill="red")
-
-            output_pages.append(sheet)
+            writer.add_page(sheet)
 
     else:
         odd_pages = [page for page in selected_pages if page[0] % 2 == 1]
@@ -756,44 +809,40 @@ def create_9up_pdf(
                 if not batch:
                     continue
 
-                sheet = Image.new("RGB", (a4_width, a4_height), "white")
-                draw = ImageDraw.Draw(sheet)
+                sheet = PageObject.create_blank_page(width=A4_WIDTH, height=A4_HEIGHT)
+                marks = []
 
                 for idx, (page_number, page) in enumerate(batch):
                     row = idx // grid_size
                     col = idx % grid_size
 
                     x = margin + (col * cell_width)
-                    y = margin + (row * cell_height)
+                    y = A4_HEIGHT - margin - ((row + 1) * cell_height)
+                    content_x = x + border
+                    content_y = y + border
+                    content_width = cell_width - (border * 2)
+                    content_height = cell_height - (border * 2)
 
-                    resized = page.resize(
-                        (cell_width - border * 2, cell_height - border * 2),
-                        Image.Resampling.LANCZOS
+                    transform = fit_page_transform(
+                        page,
+                        content_x,
+                        content_y,
+                        content_width,
+                        content_height
                     )
+                    add_page_to_sheet(sheet, page, transform, writer)
+                    marks.append((x, y, cell_width, cell_height, page_number))
 
-                    sheet.paste(resized, (x + border, y + border))
+                if show_border or show_page_numbers:
+                    sheet.merge_page(build_marks_overlay(marks, show_border, show_page_numbers))
 
-                    if show_border:
-                        draw.rectangle(
-                            [x, y, x + cell_width, y + cell_height],
-                            outline="black",
-                            width=4
-                        )
+                writer.add_page(sheet)
 
-                    if show_page_numbers:
-                        draw.text((x + 15, y + 15), str(page_number), fill="red")
-
-                output_pages.append(sheet)
-
-    if not output_pages:
+    if not writer.pages:
         raise Exception("Output PDF create nahi hua")
 
-    output_pages[0].save(
-        output_path,
-        save_all=True,
-        append_images=output_pages[1:],
-        resolution=180
-    )
+    with open(output_path, "wb") as output_file:
+        writer.write(output_file)
 
 
 if __name__ == "__main__":

@@ -1,6 +1,8 @@
 Flask
 gunicorn
 PyPDF2
+pypdf
 pdf2image
 Pillow
+reportlab
 Werkzeug
