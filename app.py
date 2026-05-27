@@ -192,6 +192,16 @@ def build_marks_overlay(cells, show_border, show_page_numbers):
     return PdfReader(buffer).pages[0]
 
 
+def grid_position(index, grid_size, mirror_columns=False):
+    row = index // grid_size
+    col = index % grid_size
+
+    if mirror_columns:
+        col = grid_size - 1 - col
+
+    return row, col
+
+
 def parse_page_range(page_range, total_pages):
     if not page_range or not page_range.strip():
         return list(range(total_pages))
@@ -767,8 +777,7 @@ def create_9up_pdf(
             marks = []
 
             for idx, (page_number, page) in enumerate(batch):
-                row = idx // grid_size
-                col = idx % grid_size
+                row, col = grid_position(idx, grid_size)
 
                 x = margin + (col * cell_width)
                 y = A4_HEIGHT - margin - ((row + 1) * cell_height)
@@ -813,8 +822,11 @@ def create_9up_pdf(
                 marks = []
 
                 for idx, (page_number, page) in enumerate(batch):
-                    row = idx // grid_size
-                    col = idx % grid_size
+                    row, col = grid_position(
+                        idx,
+                        grid_size,
+                        mirror_columns=not is_odd
+                    )
 
                     x = margin + (col * cell_width)
                     y = A4_HEIGHT - margin - ((row + 1) * cell_height)
