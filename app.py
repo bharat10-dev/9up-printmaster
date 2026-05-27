@@ -115,7 +115,14 @@ def parse_int(value, default, minimum, maximum):
     return max(minimum, min(maximum, number))
 
 
-def measurement_to_pixels(value, unit, default_px, minimum_px, maximum_px):
+def measurement_to_pixels(
+    value,
+    unit,
+    default_px,
+    minimum_px,
+    maximum_px,
+    allow_negative=False
+):
     if value is None or str(value).strip() == "":
         return default_px
 
@@ -124,19 +131,21 @@ def measurement_to_pixels(value, unit, default_px, minimum_px, maximum_px):
     except ValueError as exc:
         raise ValueError("Margin and gap must be numbers") from exc
 
-    if amount < 0:
+    if amount < 0 and not allow_negative:
         raise ValueError("Margin and gap cannot be negative")
 
     normalized_unit = (unit or "cm").strip().lower()
 
     if normalized_unit in {"cm", "centimeter", "centimeters"}:
         pixels = amount * LAYOUT_DPI / 2.54
+    elif normalized_unit in {"mm", "millimeter", "millimeters"}:
+        pixels = amount * LAYOUT_DPI / 25.4
     elif normalized_unit in {"in", "inch", "inches"}:
         pixels = amount * LAYOUT_DPI
     elif normalized_unit in {"px", "pixel", "pixels"}:
         pixels = amount
     else:
-        raise ValueError("Unit must be cm or inch")
+        raise ValueError("Unit must be cm, mm, or inch")
 
     return max(minimum_px, min(maximum_px, pixels))
 
@@ -738,7 +747,15 @@ def get_9up_options():
         "show_page_numbers": parse_bool(request.form.get("page_numbers"), True),
         "show_border": parse_bool(request.form.get("borders"), True),
         "margin": margin,
-        "border": border
+        "border": border,
+        "duplex_back_y_offset": measurement_to_pixels(
+            request.form.get("back_y_offset_value"),
+            request.form.get("back_y_offset_unit", "mm"),
+            0,
+            -144,
+            144,
+            allow_negative=True
+        )
     }
 
     return mode, grid_size, options
@@ -753,7 +770,8 @@ def create_9up_pdf(
     show_page_numbers=True,
     show_border=True,
     margin=25,
-    border=12
+    border=12,
+    duplex_back_y_offset=0
 ):
     reader = PdfReader(input_path)
     if not reader.pages:
@@ -830,6 +848,10 @@ def create_9up_pdf(
 
                     x = margin + (col * cell_width)
                     y = A4_HEIGHT - margin - ((row + 1) * cell_height)
+
+                    if not is_odd:
+                        y += duplex_back_y_offset
+
                     content_x = x + border
                     content_y = y + border
                     content_width = cell_width - (border * 2)
